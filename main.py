@@ -2,34 +2,41 @@ if __name__ != "__main__":
     exit(1)
     
 import pygame as pg
+from src.modules.Tile.Tile import Tile
+from src.Screens.menus.mainMenu import main_menu
+
+"""
+---------- Labyrinth Recall ----------
+
+16x16 pixel tiles
+
+"""
+
 
 pg.init()
 screen = pg.display.set_mode((600, 450))
 pg.display.set_caption("")
-
-
-class Tile(object):
-    def __init__(self, name, collide, coords):
-        self._name = name
-        self._collide = collide
-        self._coords = coords
-        self._rect = pg.rect.Rect(coords, 16, 16)
-        self._image =
-
-    def draw(self, screen):
-        pg.draw.rect(screen, (50, 50, 50), self._rect, 4)
 
 mapp = []
 
 for y in range(50):
     temp = []
     for x in range(50):
-        temp.append(Tile("blank", False, (x, y)))
+        temp.append(Tile("blank", False, (x * 16, y * 16)))
     mapp.append(temp)
 
 # Game Loop
 
+main_menu()
+
 while True:
+
+    for y, yaxis in enumerate(mapp):
+        for x, tile in enumerate(yaxis):
+            coords = (tile._rect.x, tile._rect.y)
+            """tile._rect.x = coords[0] +
+            tile."""
+
     # checking for event
     for event in pg.event.get():
         if event.type == pg.QUIT:

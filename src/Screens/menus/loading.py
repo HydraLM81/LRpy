@@ -2,7 +2,7 @@ import pygame as pg
 from ....paths import *
 pg.init()
 
-background_color = (250,250,250)#(178,99,27)
+background_color = (250, 250, 250)#(178,99,27)
 (width, height) = (800, 450)
 screen = pg.display.set_mode((width, height))
  
@@ -23,10 +23,10 @@ image_final = image_edit.copy()
 image_rect = image_edit.get_rect(center=screen_rect.center)
 angle = 0
 
-font = pg.freetype.Font("Pixellettersfull-BnJ5.ttf", 50)
+font = pg.font.Font("Pixellettersfull-BnJ5.ttf", 50)
 text_surface, rect = font.render("Loading...", (0, 0, 0))
 
-textWidth=text_surface.get_width()
+textWidth = text_surface.get_width()
 
 with open(ROOT_DIR/"commFile.txt") as commFile:
     for line in commFile:
@@ -38,7 +38,7 @@ running=True
 while running:
   
     for event in pg.event.get():
-        if event.type == pg.QUIT or last_line=="CPP COMPL":
+        if event.type == pg.QUIT:
             running=False
             screen = pg.display.set_mode((1, 1))
 
