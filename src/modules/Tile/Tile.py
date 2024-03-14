@@ -7,11 +7,13 @@ path = cwd + "/src/sprites/environ/"
 NULL = pg.image.load(path + "NULL.png")
 
 class Tile(object):
-    def __init__(self, name: str, collide: bool, coords: tuple[int, int]):
+    def __init__(self, name: str, collide: bool, coordinates: tuple[int, int]):
+        r"Creates a new Tile object."
         self._name: str = name
         self._collide: bool = collide
-        self._coords: tuple[int, int] = coords
-        self._rect = pg.rect.Rect(coords[0], coords[1], 16, 16)
+        self._coordinates: tuple[int, int] = coordinates
+        self._rect = pg.rect.Rect(coordinates[0], coordinates[1], 16, 16)
+
         try:
             self._image = pg.image.load(path + name + ".png")
         except Exception:
@@ -19,4 +21,5 @@ class Tile(object):
             self._image = NULL
 
     def draw(self, screen):
-        pg.draw.rect(screen, (50, 50, 50), self._rect, 4)
+        r"Return: (image, rect)"
+        return (self._image, self._rect)

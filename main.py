@@ -4,6 +4,7 @@ if __name__ != "__main__":
 import pygame as pg
 from src.modules.Tile.Tile import Tile
 from src.Screens.menus.mainMenu import main_menu_function
+from src.Screens.cutscenes.openingScene import opening_cutscene_video
 
 """
 ---------- Labyrinth Recall ----------
@@ -24,10 +25,10 @@ for y in range(50):
     for x in range(50):
         temp.append(Tile("blank", False, (x * 16, y * 16)))
     mapp.append(temp)
-
+print('a')
 # Game Loop
-
 main_menu_function(screen)
+opening_cutscene_video()
 
 while True:
 

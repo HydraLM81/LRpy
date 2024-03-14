@@ -30,7 +30,7 @@ def thanks_screen_function(screen):
 
         # gets all events
         for event in pg.event.get():
-            # if the event type is the quit button at the top right corner
+            # if the event type is the quit button in the top right corner
             if event.type == pg.QUIT:
                 return True
 

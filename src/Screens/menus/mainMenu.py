@@ -13,7 +13,7 @@ font_path = os.getcwd() + "/src/screens/menus/Pixellettersfull-BnJ5.ttf"
 # creating different sized fonts for things
 fontSmall = pg.font.Font(font_path, 50)
 fontBig = pg.font.Font(font_path, 100)
-fontVerySmall = pg.font.Font(font_path, 10)
+fontVerySmall = pg.font.Font(font_path, 25)
 
 # creating text for the logo and buttons
 t_text = fontBig.render("LABRYNTH RECALL", 0, c.BLACK)
@@ -33,6 +33,8 @@ quitButton = pg.rect.Rect(300, 350, 200, 50)
 
 
 def main_menu_function(screen):
+    r"Shows the Main Menu and returns the selected option."
+
     # which box is highlighted
     box = 1
 
@@ -80,12 +82,33 @@ def main_menu_function(screen):
                     else:
                         box = 1
 
+            if event.type == pg.MOUSEMOTION:
+                mouse_pos = pg.mouse.get_pos()
+                if playButton.collidepoint(mouse_pos):
+                    box = 1
+                elif creditButton.collidepoint(mouse_pos):
+                    box = 2
+                elif quitButton.collidepoint(mouse_pos):
+                    box = 3
+
+            if event.type == pg.MOUSEBUTTONUP:
+                mouse_pos = pg.mouse.get_pos()
+                if playButton.collidepoint(mouse_pos):
+                    print("Main Menu PLAY")
+                    return "Main Menu PLAY"
+                elif creditButton.collidepoint(mouse_pos):
+                    print("Main Menu CREDITS")
+                    return "Main Menu CREDITS"
+                elif quitButton.collidepoint(mouse_pos):
+                    print("Main Menu QUIT")
+                    return "Main Menu QUIT"
+
         screen.fill(c.WHITE)
 
         # drawing the grey rectangles behind the button text (it's the "buttons")
-        pg.draw.rect(screen, (50, 50, 50), playButton)
-        pg.draw.rect(screen, (50, 50, 50), creditButton)
-        pg.draw.rect(screen, (50, 50, 50), quitButton)
+        pg.draw.rect(screen, (100, 100, 100), playButton)
+        pg.draw.rect(screen, (100, 100, 100), creditButton)
+        pg.draw.rect(screen, (100, 100, 100), quitButton)
 
         # Labrynth Recall (the big text at the top of the screen)
         screen.blit(t_text, (400 - (t_text.get_width() / 2), 50))
@@ -96,8 +119,8 @@ def main_menu_function(screen):
         screen.blit(q_text, (400 - (q_text.get_width() / 2), 375 - (q_text.get_height() / 2)))
 
         # subtext
-        screen.blit(subText, (5, 430))
-        screen.blit(subTextTwo, (5, 440))
+        screen.blit(subText, (5, 410))
+        screen.blit(subTextTwo, (5, 428))
 
         # drawing the "highlight" box
         if box == 1:

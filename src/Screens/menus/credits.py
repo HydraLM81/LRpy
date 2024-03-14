@@ -1,5 +1,6 @@
 #import pygame library
 import pygame as pg
+import os
 from ...modules.Colors import Colors as c
 
 # initialize pygame
@@ -8,28 +9,31 @@ pg.init()
 # set background and screen
 background_color = (250, 250, 250)  # (178,99,27)
 
+font_path = os.getcwd() + "/src/screens/menus/Pixellettersfull-BnJ5.ttf"
+
 # different sized fonts
-bigFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 100)
-medFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 50)
-smallFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 30)
-VerySmallFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 15)
+bigFont = pg.font.Font(font_path, 100)
+medFont = pg.font.Font(font_path, 50)
+smallFont = pg.font.Font(font_path, 30)
+VerySmallFont = pg.font.Font(font_path, 15)
 
 # render the text
-creditsTxt = bigFont.render("Credits", c.BLACK)
+creditsTxt = bigFont.render("Credits", 0, c.BLACK)
 
-lineOne = smallFont.render("Made by Noah Balderston and Mateo Rose for a school project.", c.BLACK)
-lineTwo = VerySmallFont.render("Design: Both of us", c.BLACK)
-lineThree = VerySmallFont.render("Textures and PyGame: Noah", c.BLACK)
-lineThreeOne = VerySmallFont.render("PyGame embedding: Noah", c.BLACK)
-lineFour = VerySmallFont.render("Backend: Both of us", c.BLACK)
-lineFive = VerySmallFont.render("Map generation: Mateo", c.BLACK)
-lineSix = VerySmallFont.render("Sound design: Mainly Mateo", c.BLACK)
-lineSeven = VerySmallFont.render("More nights spent: Noah 100%", c.BLACK)
+lineOne = smallFont.render("Made by Noah Balderston and Mateo Rose for a school project.", 0, c.BLACK)
+lineTwo = VerySmallFont.render("Design: Both of us", 0, c.BLACK)
+lineThree = VerySmallFont.render("Textures and PyGame: Noah", 0, c.BLACK)
+lineThreeOne = VerySmallFont.render("PyGame embedding: Noah", 0, c.BLACK)
+lineFour = VerySmallFont.render("Backend: Both of us", 0, c.BLACK)
+lineFive = VerySmallFont.render("Map generation: Mateo", 0, c.BLACK)
+lineSix = VerySmallFont.render("Sound design: Mainly Mateo", 0, c.BLACK)
+lineSeven = VerySmallFont.render("More nights spent: Noah 100%", 0, c.BLACK)
 
-exitText = medFont.render("Press any key to exit", c.BLACK)
+exitText = medFont.render("Press any key to exit", 0, c.BLACK)
 
 
 def credits_menu_function(screen):
+    r"""Shows credit screen. Waits for input -> return | exit."""
     # set background color
     screen.fill(background_color)
 
@@ -60,4 +64,4 @@ def credits_menu_function(screen):
 
             # if the event was a keypress
             if event.type == pg.KEYDOWN:
-                exit(0)
+                return True
