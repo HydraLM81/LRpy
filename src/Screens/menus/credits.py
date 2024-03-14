@@ -1,83 +1,63 @@
 #import pygame library
 import pygame as pg
-from ....paths import *
-#initialize pygame
+from ...modules.Colors import Colors as c
+
+# initialize pygame
 pg.init()
 
-#set background and screen
-background_color = (250,250,250)#(178,99,27)
-(width, height) = (800, 450)
-screen = pg.display.set_mode((width, height))
+# set background and screen
+background_color = (250, 250, 250)  # (178,99,27)
 
-#sets "application" name
-pg.display.set_caption('Labrynth Recall (Credits)')
+# different sized fonts
+bigFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 100)
+medFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 50)
+smallFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 30)
+VerySmallFont = pg.font.Font("Pixellettersfull-BnJ5.ttf", 15)
 
-#different sized fonts
-bigFont=pg.freetype.Font("Pixellettersfull-BnJ5.ttf", 100)
-medFont=pg.freetype.Font("Pixellettersfull-BnJ5.ttf", 50)
-smallFont=pg.freetype.Font("Pixellettersfull-BnJ5.ttf", 30)
-VerySmallFont=pg.freetype.Font("Pixellettersfull-BnJ5.ttf", 15)
+# render the text
+creditsTxt = bigFont.render("Credits", c.BLACK)
 
-#render the text
-creditsTxt, rect = bigFont.render("Credits", (0, 0, 0))
+lineOne = smallFont.render("Made by Noah Balderston and Mateo Rose for a school project.", c.BLACK)
+lineTwo = VerySmallFont.render("Design: Both of us", c.BLACK)
+lineThree = VerySmallFont.render("Textures and PyGame: Noah", c.BLACK)
+lineThreeOne = VerySmallFont.render("PyGame embedding: Noah", c.BLACK)
+lineFour = VerySmallFont.render("Backend: Both of us", c.BLACK)
+lineFive = VerySmallFont.render("Map generation: Mateo", c.BLACK)
+lineSix = VerySmallFont.render("Sound design: Mainly Mateo", c.BLACK)
+lineSeven = VerySmallFont.render("More nights spent: Noah 100%", c.BLACK)
 
-lineOne,rect=smallFont.render("Made by Noah Balderston and Mateo Rose for a school project.",(0,0,0))
-lineTwo,rect=VerySmallFont.render("Design: Both of us",(0,0,0))
-lineThree,rect=VerySmallFont.render("Textures and PyGame: Noah",(0,0,0))
-lineThreeOne,rect=VerySmallFont.render("PyGame embedding: Noah",(0,0,0))
-lineFour,rect=VerySmallFont.render("Backend: Both of us",(0,0,0))
-lineFive,rect=VerySmallFont.render("Map generation: Mateo",(0,0,0))
-lineSix,rect=VerySmallFont.render("Sound design: Mainly Mateo",(0,0,0))
-lineSeven,rect=VerySmallFont.render("More nights spent: Noah 100%",(0,0,0))
+exitText = medFont.render("Press any key to exit", c.BLACK)
 
-exitText,rect=medFont.render("Press any key to exit",(0,0,0))
 
-#set background color
-screen.fill(background_color)
+def credits_menu_function(screen):
+    # set background color
+    screen.fill(background_color)
 
-#print the text to screen
-screen.blit(creditsTxt, ((width/2)-(creditsTxt.get_width()/2), 50))
+    # print the text to screen
+    screen.blit(creditsTxt, (400 - (creditsTxt.get_width() / 2), 50))
 
-screen.blit(lineOne, ((width/2)-(lineOne.get_width()/2), 155))
-screen.blit(lineTwo, ((width/2)-(lineTwo.get_width()/2), 220))
-screen.blit(lineThree, ((width/2)-(lineThree.get_width()/2), 240))
-screen.blit(lineThreeOne,((width/2)-(lineThreeOne.get_width()/2), 260))
-screen.blit(lineFour, ((width/2)-(lineFour.get_width()/2), 280))
-screen.blit(lineFive, ((width/2)-(lineFive.get_width()/2), 300))
-screen.blit(lineSix, ((width/2)-(lineSix.get_width()/2), 320))
-screen.blit(lineSeven, ((width/2)-(lineSeven.get_width()/2), 360))
+    screen.blit(lineOne, (400 - lineOne.get_width() / 2), 155)
+    screen.blit(lineTwo, (400 - lineTwo.get_width() / 2), 220)
+    screen.blit(lineThree, (400 - lineThree.get_width() / 2), 240)
+    screen.blit(lineThreeOne, (400 - lineThreeOne.get_width() / 2), 260)
+    screen.blit(lineFour, (400 - lineFour.get_width() / 2), 280)
+    screen.blit(lineFive, (400 - lineFive.get_width() / 2), 300)
+    screen.blit(lineSix, (400 - lineSix.get_width() / 2), 320)
+    screen.blit(lineSeven, (400 - lineSeven.get_width() / 2), 360)
 
-screen.blit(exitText, ((width/2)-(exitText.get_width()/2), 400))
+    screen.blit(exitText, (400 - exitText.get_width() / 2), 400)
 
-#update display
-pg.display.flip()
+    # update display
+    pg.display.flip()
 
-#open commfile and append that credits was opened
-with open(ROOT_DIR/"commFile.txt",'a') as commFile:
-    commFile.write("\n\nPY Cred Open Success")
+    while True:
 
-#keep the loop running 
-running=True
+        # get all events
+        for event in pg.event.get():
+            # if the player closed the window
+            if event.type == pg.QUIT:
+                exit(0)
 
-while running:
-  
-    #get all events
-    for event in pg.event.get():
-        #if the player closed the window
-        if event.type == pg.QUIT:
-            #open commfile and write forced exit
-            with open(ROOT_DIR/"commFile.txt",'a') as commFile:
-                commFile.write("\nPY Cred FORCE Exit")
-            #stop loop
-            running=False
-            
-        #if the event was a keypress
-        if event.type==pg.KEYDOWN:
-            #open commfile and write manual exit
-            with open(ROOT_DIR/"commFile.txt",'a') as commFile:
-                commFile.write("\nPY Cred Manual Exit")
-            #stop loop
-            running=False
-
-#close window
-pg.quit()
+            # if the event was a keypress
+            if event.type == pg.KEYDOWN:
+                exit(0)

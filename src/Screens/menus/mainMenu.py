@@ -1,118 +1,111 @@
 # import pygame library
 import pygame as pg
-from ...paths import *
+import os
+from ...modules.Colors import Colors as c
 # init pygame
 pg.init()
 
 # setting background color and the actual display (so that it exists)
-background_color = (150,150,150)
-(width, height) = (800, 450)
-screen = pg.display.set_mode((width, height))
-pg.display.set_caption('Labrynth Recall (Main Menu)')
+background_color = (150, 150, 150)
 
-screen.fill(background_color)
-# the .flip() updates the screen so that it actually shows what you put there
-pg.display.flip()
-
+font_path = os.getcwd() + "/src/screens/menus/Pixellettersfull-BnJ5.ttf"
 
 # creating different sized fonts for things
-fontSmall = pg.font.Font("Pixellettersfull-BnJ5.ttf", 50)
-fontBig = pg.font.Font("Pixellettersfull-BnJ5.ttf", 100)
-fontVerySmall = pg.font.Font("Pixellettersfull-BnJ5.ttf", 10)
+fontSmall = pg.font.Font(font_path, 50)
+fontBig = pg.font.Font(font_path, 100)
+fontVerySmall = pg.font.Font(font_path, 10)
 
 # creating text for the logo and buttons
-titleText,rext = fontBig.render("LABRYNTH RECALL",)
+t_text = fontBig.render("LABRYNTH RECALL", 0, c.BLACK)
 
-playText, rect = fontSmall.render("Play", (0, 0, 0))
-creditsText, rect = fontSmall.render("Credits",(0,0,0))
-quitText, rect = fontSmall.render("Quit",(0,0,0))
+p_text = fontSmall.render("Play", 0, c.BLACK)
+c_text = fontSmall.render("Credits", 0, c.BLACK)
+q_text = fontSmall.render("Quit", 0, c.BLACK)
 
 # subtext
-subText, rect = fontVerySmall.render("Use arrow keys to select, enter/return to continue.",(0,0,0))
-subTextTwo, rect = fontVerySmall.render("Made by Noah Balderston and Mateo Rose",(0,0,0))
-
-# keeps the while loop going (while the code "shouldn't" kill its self)
-running=True
-
-# which box is highlighted
-box=1
+subText = fontVerySmall.render("Use arrow keys to select, enter/return to continue.", 0, c.BLACK)
+subTextTwo = fontVerySmall.render("Made by Noah Balderston and Mateo Rose", 0, c.BLACK)
 
 # the different button "boxes". I didn't want to compute these at run-time
-playButton=pg.Rect(width/2-100,150,200,50)
-creditButton=pg.Rect(width/2-100,250,200,50)
-quitButton=pg.Rect(width/2-100,350,200,50)
+playButton = pg.rect.Rect(300, 150, 200, 50)
+creditButton = pg.rect.Rect(300, 250, 200, 50)
+quitButton = pg.rect.Rect(300, 350, 200, 50)
 
-def main_menu():
-  while running:
-    # detecting "events".
-    for event in pg.event.get():
-      # if the "X" button at top-right of window is clicked, then kill the program
-      if event.type == pg.QUIT:
-        running=False
 
-      # if the event was a key press
-      if event.type==pg.KEYDOWN:
+def main_menu_function(screen):
+    # which box is highlighted
+    box = 1
 
-        # if the key press was the enter or return key
-        if event.key==pg.K_RETURN or event.key==pg.K_KP_ENTER:
+    while True:
 
-          # opening the commFile to write what the enter button did
+        # detecting "events".
+        for event in pg.event.get():
+            # if the "X" button at top-right of window is clicked, then kill the program
+            if event.type == pg.QUIT:
+                exit(0)
 
-          if box==1:
-            return "Main Menu PLAY"
-          elif box==2:
-            return "Main Menu CREDITS"
-          elif box==3:
-            return "Main Menu QUIT"
-          else:
-            # just for error prevention
-            return "Main Menu 'box' out of bounds on selection"
+            # if the event was a key press
+            if event.type == pg.KEYDOWN:
 
-            # kills the program once writing to commFile is done
-            running=False
+                # if the key press was the enter or return key
+                if event.key == pg.K_RETURN or event.key == pg.K_KP_ENTER:
 
-        # if the keypress was the up arrow, then move the "highlight" box up one
-        elif event.key==pg.K_UP:
-          if box!=1:
-            box-=1
-          else:
-            # change if there are more than 3 options
-            box=3
+                    match box:
+                        case 1:
+                            print("Main Menu PLAY")
+                            return "Main Menu PLAY"
+                        case 2:
+                            print("Main Menu CREDITS")
+                            return "Main Menu CREDITS"
+                        case 3:
+                            print("Main Menu QUIT")
+                            return "Main Menu QUIT"
+                        case _:
+                            print("Main Menu 'box' out of bounds on selection")
+                            # just for error prevention
+                            exit("Main Menu 'box' out of bounds on selection")
 
-        # if the keypress was the down arrow, move "highlight" box down one
-        elif event.key==pg.K_DOWN:
-          if box!=3:
-            box+=1
-          else:
-            box=1
+                # if the keypress was the up arrow, then move the "highlight" box up one
+                elif event.key == pg.K_UP:
+                    if box != 1:
+                        box -= 1
+                    else:
+                        # change if there are more than 3 options
+                        box = 3
 
-    # drawing the grey rectangles behind the button text (it's the "buttons")
-    pg.draw.rect(screen,(50,50,50),playButton)
-    pg.draw.rect(screen,(50,50,50),creditButton)
-    pg.draw.rect(screen,(50,50,50),quitButton)
+                # if the keypress was the down arrow, move "highlight" box down one
+                elif event.key == pg.K_DOWN:
+                    if box != 3:
+                        box += 1
+                    else:
+                        box = 1
 
-    # Labrynth Recall (the big text at the top of the screen)
-    screen.blit(titleText,((width/2)-(titleText.get_width()/2), 50))
+        screen.fill(c.WHITE)
 
-    # the text on top of the buttons
-    screen.blit(playText, ((width/2)-(playText.get_width()/2), 175-(playText.get_height()/2)))
-    screen.blit(creditsText, ((width/2)-(creditsText.get_width()/2), 275-(creditsText.get_height()/2)))
-    screen.blit(quitText, ((width/2)-(quitText.get_width()/2), 375-(quitText.get_height()/2)))
+        # drawing the grey rectangles behind the button text (it's the "buttons")
+        pg.draw.rect(screen, (50, 50, 50), playButton)
+        pg.draw.rect(screen, (50, 50, 50), creditButton)
+        pg.draw.rect(screen, (50, 50, 50), quitButton)
 
-    # subtext
-    screen.blit(subText,(5,430))
-    screen.blit(subTextTwo,(5,440))
+        # Labrynth Recall (the big text at the top of the screen)
+        screen.blit(t_text, (400 - (t_text.get_width() / 2), 50))
 
-    # drawing the "highlight" box
-    if box==1:
-      pg.draw.rect(screen,(25,25,25),(width/2-100,150,200,50),5)
-    if box==2:
-      pg.draw.rect(screen,(25,25,25),(width/2-100,250,200,50),5)
-    if box==3:
-      pg.draw.rect(screen,(25,25,25)  ,(width/2-100,350,200,50),5)
+        # the text on top of the buttons
+        screen.blit(p_text, (400 - (p_text.get_width() / 2), 175 - (p_text.get_height() / 2)))
+        screen.blit(c_text, (400 - (c_text.get_width() / 2), 275 - (c_text.get_height() / 2)))
+        screen.blit(q_text, (400 - (q_text.get_width() / 2), 375 - (q_text.get_height() / 2)))
 
-    # update screen
-    pg.display.flip()
+        # subtext
+        screen.blit(subText, (5, 430))
+        screen.blit(subTextTwo, (5, 440))
 
-  # close program
-  pg.quit()
+        # drawing the "highlight" box
+        if box == 1:
+            pg.draw.rect(screen, (25, 25, 25), (300, 150, 200, 50), 5)
+        if box == 2:
+            pg.draw.rect(screen, (25, 25, 25), (300, 250, 200, 50), 5)
+        if box == 3:
+            pg.draw.rect(screen, (25, 25, 25), (300, 350, 200, 50), 5)
+
+        # update screen
+        pg.display.flip()

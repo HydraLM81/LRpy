@@ -11,7 +11,7 @@ class Tile(object):
         self._name: str = name
         self._collide: bool = collide
         self._coords: tuple[int, int] = coords
-        self._rect: pg.rect.Rect = pg.rect.Rect(coords, 16, 16)
+        self._rect = pg.rect.Rect(coords[0], coords[1], 16, 16)
         try:
             self._image = pg.image.load(path + name + ".png")
         except Exception:

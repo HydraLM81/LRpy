@@ -3,7 +3,7 @@ if __name__ != "__main__":
     
 import pygame as pg
 from src.modules.Tile.Tile import Tile
-from src.Screens.menus.mainMenu import main_menu
+from src.Screens.menus.mainMenu import main_menu_function
 
 """
 ---------- Labyrinth Recall ----------
@@ -14,7 +14,7 @@ from src.Screens.menus.mainMenu import main_menu
 
 
 pg.init()
-screen = pg.display.set_mode((600, 450))
+screen = pg.display.set_mode((800, 450))
 pg.display.set_caption("")
 
 mapp = []
@@ -27,7 +27,7 @@ for y in range(50):
 
 # Game Loop
 
-main_menu()
+main_menu_function(screen)
 
 while True:
 
