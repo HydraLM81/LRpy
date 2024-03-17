@@ -49,10 +49,10 @@ def new_area():
 class Room(object):
     def __init__(self, x, y, w, h):
         self.area = new_area()
-        self._x = x
-        self._y = y
-        self._w = w
-        self._h = h
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
         self.rect = pg.rect.Rect(x, y, w, h)
         
 
@@ -84,7 +84,7 @@ class Level(object):
             room_x: int = rand.randint(1, level_size[0] - room_w - 1)  # Level width  - 1
             room_y: int = rand.randint(1, level_size[1] - room_h - 1)  # Level height - 1
     
-            current_room = pg.rect.Rect(room_x, room_y, room_w, room_h)
+            current_room = Room(room_x, room_y, room_w, room_h)
     
             # Checking for collisions
             def check_room_collision() -> bool:
@@ -160,7 +160,7 @@ class Level(object):
         return _map
 
 
-    def __test__(self) -> NoReturn:
+    def __test__(self):
         r"""Run to visualize the current level."""
         screen = pg.display.set_mode((800, 450))
         pg.display.set_caption("")
