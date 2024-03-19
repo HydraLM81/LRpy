@@ -33,7 +33,7 @@ quitButton = pg.rect.Rect(300, 350, 200, 50)
 
 
 def main_menu_function(screen):
-    r"Shows the Main Menu and returns the selected option."
+    r"""Shows the Main Menu and returns the selected option."""
 
     # which box is highlighted
     box = 1

@@ -25,10 +25,10 @@ Flood-fill:
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int] = (150, 150)  # (x, y)
+level_size: tuple[int, int] = (20, 20)  # (x, y)
 
 # Normal rooms
-room_placement_attempts: int = 100  # Attempts to place rooms
+room_placement_attempts: int = 0  # Attempts to place rooms
 room_minimum_size: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
 room_maximum_size: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
 
@@ -75,6 +75,12 @@ class Room(object):
         self.rect = pg.rect.Rect(x, y, w, h)
 
 
+class DispItem(object):
+    def __init__(self, obj: pg.rect.Rect | Room, char: str):
+        self.obj: pg.rect.Rect | Room = obj
+        self.char: str = char
+
+
 class Level(object):
     def __init__(self):
         r"""Create new level object with set 'GENERATION PARAMETERS' (Level_Generator.py)"""
@@ -82,19 +88,20 @@ class Level(object):
 
         # Carve rooms
         self.__existing_rooms: list[Room] = []
-        self.__disp_list: list[pg.rect.Rect | Room] = []
+        self.__disp_list: list[DispItem] = []
         self.carve_rooms()
 
-        # self.carve_hallways()
+        self.carve_hallways()
 
-        self.__test__(True, self._map)
+        self.__test__(self._map)
 
     def carve(self, coordinate: tuple[int, int], new: str = ' ', disp_list=True):
         self._map[coordinate[1]][coordinate[0]] = new
         if disp_list:
-            self.__disp_list.append(pg.rect.Rect(coordinate[1], 
-                                                 coordinate[0], 
-                                                 1, 1))
+            self.__disp_list.append(DispItem(pg.rect.Rect(coordinate[1],
+                                             coordinate[0],
+                                             1, 1),
+                                             new))
     
     # Stage 1
     def carve_rooms(self):
@@ -135,12 +142,12 @@ class Level(object):
                         self.carve((x, y), 'r', disp_list=False)
 
                 self.__existing_rooms.append(current_room)
-                self.__disp_list.append(current_room)
-
+                self.__disp_list.append(DispItem(current_room, 'r'))
 
     # Stage 2
     def carve_hallways(self):
         r"""Carve the hallways"""
+
         def cr(crd):
             if crd[0] + 1 >= level_size[0] - 2:
                 return False
@@ -148,6 +155,7 @@ class Level(object):
             two = self._map[crd[1]][crd[0] + 1]
             thr = self._map[crd[1] + 1][crd[0] + 1]
             return one == two == thr == 'X'
+
         def cl(crd):
             if crd[0] - 1 <= 0:
                 return False
@@ -155,6 +163,7 @@ class Level(object):
             two = self._map[crd[1]][crd[0] - 1]
             thr = self._map[crd[1] + 1][crd[0] - 1]
             return one == two == thr == 'X'
+
         def cu(crd):
             if crd[1] - 1 <= 0:
                 return False
@@ -162,6 +171,7 @@ class Level(object):
             two = self._map[crd[1] - 1][crd[0]]
             thr = self._map[crd[1] - 1][crd[0] + 1]
             return one == two == thr == 'X'
+
         def cd(crd):
             if crd[1] + 1 >= level_size[1] - 2:
                 return False
@@ -169,22 +179,29 @@ class Level(object):
             two = self._map[crd[1] + 1][crd[0]]
             thr = self._map[crd[1] + 1][crd[0] + 1]
             return one == two == thr == 'X'
-           
+
         def recurse_generate(crd):
+            print(crd)
             self.carve(crd, 'ph', disp_list=True)
+
             while True:
-                if cr((crd[0] + 1, crd[1])):
+                if cr((crd[0], crd[1])):
                     recurse_generate((crd[0] + 1, crd[1]))
-                elif cl((crd[0] - 1, crd[1])):
+                elif cl((crd[0], crd[1])):
                     recurse_generate((crd[0] - 1, crd[1]))
-                elif cu((crd[0], crd[1] - 1)):
+                elif cu((crd[0], crd[1])):
                     recurse_generate((crd[0], crd[1] - 1))
-                elif cd((crd[0], crd[1] + 1)):
+                elif cd((crd[0], crd[1])):
                     recurse_generate((crd[0], crd[1] + 1))
                 else:
                     break
+
             self.carve(crd, 'h', disp_list=True)
-      
+
+            if crd == (1, 1):
+                print("End")
+        recurse_generate((1, 1))
+
         """def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
             r"Returns all carvable neighbors"
 
@@ -235,7 +252,7 @@ class Level(object):
             _map.append(x_axis)
         return _map
 
-    def __test__(self, constant, _map: list[list[str]]):
+    def __test__(self, _map: list[list[str]]):
         r"""Run to visualize the current level."""
 
         # To incramentally show the generation as it happened
@@ -252,37 +269,37 @@ class Level(object):
 
             screen.fill((255, 255, 255))
 
-            # For each item that was added to __disp_list. Incriments to look fancy
+            # For each item that was added to __disp_list. Increments to look fancy
             for _disp_item in self.__disp_list[:next_disp_item]: 
               
                 draw_color = (100, 100, 100)
                 
                 # If '_disp_item' is a PyGame Rect, treat it as such
-                if isinstance(_disp_item, pg.rect.Rect):
-                    # Check individual colors (won't differentiate between seperate hallways)
-                    match self._map[_disp_item.y][_disp_item.x]:
+                if isinstance(_disp_item.obj, pg.rect.Rect):
+                    # Check individual colors (won't differentiate between separate hallways)
+                    match self._map[_disp_item.obj.y][_disp_item.obj.x]:
                         case 'X':
                             tick_speed = 99999999
                             draw_color = (240, 240, 240)
                         case "ph":
-                            tick_speed = 100
-                            draw_color = (100, 0, 240)
+                            tick_speed = 50
+                            draw_color = (100, 240, 240)
                         case 'h':
-                            tick_speed = 100
+                            tick_speed = 50
                             draw_color = (200, 0, 200)
                         case _:
+                            print(f"Uncaught: {self._map[_disp_item.obj.y][_disp_item.obj.x]}")
                             tick_speed = 100
                             draw_color = (255, 0, 255)
               
-                elif isinstance(_disp_item, Room):
+                elif isinstance(_disp_item.obj, Room):
                     tick_speed = 30
-                    draw_color = _ROOMS[_disp_item.area % len(_ROOMS)]
-                  
+                    draw_color = _ROOMS[_disp_item.obj.area % len(_ROOMS)]
 
-                disp_item = pg.rect.Rect(_disp_item.x * 3, 
-                   _disp_item.y * 3, 
-                   _disp_item.w * 3, 
-                   _disp_item.h * 3)
+                disp_item = pg.rect.Rect(_disp_item.obj.x * 3,
+                                         _disp_item.obj.y * 3,
+                                         _disp_item.obj.w * 3,
+                                         _disp_item.obj.h * 3)
               
                 pg.draw.rect(screen, draw_color, disp_item)
 
@@ -293,9 +310,8 @@ class Level(object):
             pg.display.update()
 
 
-
-def level_generator_function(screen):
+def level_generator_function():
     return Level()
 
 
-level_generator_function(None)
+level_generator_function()
