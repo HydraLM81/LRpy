@@ -92,10 +92,10 @@ class Level(object):
     def carve(self, coordinate: tuple[int, int], new: str = ' ', disp_list=True):
         self._map[coordinate[1]][coordinate[0]] = new
         if disp_list:
-          self.__disp_list.append(pg.rect.Rect(coordinate[1], 
-                                               coordinate[0], 
-                                               1, 1))
-
+            self.__disp_list.append(pg.rect.Rect(coordinate[1], 
+                                                 coordinate[0], 
+                                                 1, 1))
+    
     # Stage 1
     def carve_rooms(self):
         r"""Attempt to carve room randomly"""
@@ -141,9 +141,52 @@ class Level(object):
     # Stage 2
     def carve_hallways(self):
         r"""Carve the hallways"""
-
-        def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
-            r"""Returns all carvable neighbors"""
+        def cr(crd):
+            if crd[0] + 1 >= level_size[0] - 2:
+                return False
+            one = self._map[crd[1] - 1][crd[0] + 1]
+            two = self._map[crd[1]][crd[0] + 1]
+            thr = self._map[crd[1] + 1][crd[0] + 1]
+            return one == two == thr == 'X'
+        def cl(crd):
+            if crd[0] - 1 <= 0:
+                return False
+            one = self._map[crd[1] - 1][crd[0] - 1]
+            two = self._map[crd[1]][crd[0] - 1]
+            thr = self._map[crd[1] + 1][crd[0] - 1]
+            return one == two == thr == 'X'
+        def cu(crd):
+            if crd[1] - 1 <= 0:
+                return False
+            one = self._map[crd[1] - 1][crd[0] - 1]
+            two = self._map[crd[1] - 1][crd[0]]
+            thr = self._map[crd[1] - 1][crd[0] + 1]
+            return one == two == thr == 'X'
+        def cd(crd):
+            if crd[1] + 1 >= level_size[1] - 2:
+                return False
+            one = self._map[crd[1] + 1][crd[0] - 1]
+            two = self._map[crd[1] + 1][crd[0]]
+            thr = self._map[crd[1] + 1][crd[0] + 1]
+            return one == two == thr == 'X'
+           
+        def recurse_generate(crd):
+            self.carve(crd, 'ph', disp_list=True)
+            while True:
+                if cr((crd[0] + 1, crd[1])):
+                    recurse_generate((crd[0] + 1, crd[1]))
+                elif cl((crd[0] - 1, crd[1])):
+                    recurse_generate((crd[0] - 1, crd[1]))
+                elif cu((crd[0], crd[1] - 1)):
+                    recurse_generate((crd[0], crd[1] - 1))
+                elif cd((crd[0], crd[1] + 1)):
+                    recurse_generate((crd[0], crd[1] + 1))
+                else:
+                    break
+            self.carve(crd, 'h', disp_list=True)
+      
+        """def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
+            r"Returns all carvable neighbors"
 
             # Fixes some
             area = self._map
@@ -171,14 +214,6 @@ class Level(object):
             # Return all neighbors
             return neighbors
 
-        """
-        XXXXXXXXXXXXX
-        XXhXnXXXXXXXX
-        XXhXhXXXXXXXX
-        XXhhhXXXXXXXX
-        XXXXXXXXXXXXX
-        """
-
         # A list of all tiles that have carvable neighbors
         alive_tiles = []
         for y, y_axis in enumerate(self._map):
@@ -188,7 +223,7 @@ class Level(object):
 
         start_coordinate = (1, 1)  # x, y of starting coordinate for floodfill
         while check_neighbors(start_coordinate) is None:
-            start_coordinate = (start_coordinate[0] + 1, 1)
+            start_coordinate = (start_coordinate[0] + 1, 1)"""
 
     @classmethod
     def blank_map(cls) -> list[list[str]]:
@@ -221,7 +256,7 @@ class Level(object):
             for _disp_item in self.__disp_list[:next_disp_item]: 
               
                 draw_color = (100, 100, 100)
-
+                
                 # If '_disp_item' is a PyGame Rect, treat it as such
                 if isinstance(_disp_item, pg.rect.Rect):
                     # Check individual colors (won't differentiate between seperate hallways)
@@ -229,6 +264,12 @@ class Level(object):
                         case 'X':
                             tick_speed = 99999999
                             draw_color = (240, 240, 240)
+                        case "ph":
+                            tick_speed = 100
+                            draw_color = (100, 0, 240)
+                        case 'h':
+                            tick_speed = 100
+                            draw_color = (200, 0, 200)
                         case _:
                             tick_speed = 100
                             draw_color = (255, 0, 255)
