@@ -8,7 +8,7 @@ pg.init()
 # setting background color and the actual display (so that it exists)
 background_color = (150, 150, 150)
 
-font_path = os.getcwd() + "/src/screens/menus/Pixellettersfull-BnJ5.ttf"
+font_path = os.getcwd() + "/src/Screens/menus/Pixellettersfull-BnJ5.ttf"
 
 # creating different sized fonts for things
 fontSmall = pg.font.Font(font_path, 50)

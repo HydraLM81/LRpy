@@ -38,6 +38,23 @@ room_maximum_size: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
 # 'r' = room
 # 'h' = hallway (may be filled with X)
 
+# Room colors (couldn't figure out how to import them)
+_ROOMS: dict[int, pg.color.Color] = {
+  0 :  pg.color.Color(255, 179, 198),
+  1 :  pg.color.Color(255, 192, 159),
+  2 :  pg.color.Color(255, 238, 147),
+  3 :  pg.color.Color(252, 245, 199),
+  4 :  pg.color.Color(160, 206, 217),
+  5 :  pg.color.Color(173, 247, 182),
+  6 :  pg.color.Color(128, 155, 206),
+  7 :  pg.color.Color(149, 184, 209),
+  8 :  pg.color.Color(184, 224, 210),
+  9 :  pg.color.Color(214, 234, 223),
+  10 : pg.color.Color(234, 196, 213),
+  11 : pg.color.Color(232, 209, 197),
+  12 : pg.color.Color(126, 196, 207),
+  13 : pg.color.Color(82,  178, 207)
+}
 
 __areas = 0
 
@@ -65,23 +82,25 @@ class Level(object):
 
         # Carve rooms
         self.__existing_rooms: list[Room] = []
-        self.__disp_list: list[tuple[int, int]] = []
+        self.__disp_list: list[pg.rect.Rect | Room] = []
         self.carve_rooms()
 
         # self.carve_hallways()
 
         self.__test__(True, self._map)
 
-    def carve(self, coordinate: tuple[int, int], new: str = ' '):
+    def carve(self, coordinate: tuple[int, int], new: str = ' ', disp_list=True):
         self._map[coordinate[1]][coordinate[0]] = new
-        self.__disp_list.append(coordinate)
+        if disp_list:
+          self.__disp_list.append(pg.rect.Rect(coordinate[1], 
+                                               coordinate[0], 
+                                               1, 1))
 
     # Stage 1
     def carve_rooms(self):
         r"""Attempt to carve room randomly"""
-
+      
         for attempt in range(room_placement_attempts):
-
             # Generate possible room
             room_w: int = rand.randint(room_minimum_size[0], room_maximum_size[0])
             room_h: int = rand.randint(room_minimum_size[1], room_maximum_size[1])
@@ -111,12 +130,12 @@ class Level(object):
             if check_room_collision():
 
                 # Carve room out of self._map
-                for y in range(current_room.y, current_room.h + 1):
-                    for x in range(current_room.x, current_room.w + 1):
-                        self.carve((x, y), 'r')
+                for y in range(current_room.y, current_room.h + current_room.y + 1):
+                    for x in range(current_room.x, current_room.w + current_room.x + 1):
+                        self.carve((x, y), 'r', disp_list=False)
 
                 self.__existing_rooms.append(current_room)
-
+                self.__disp_list.append(current_room)
 
 
     # Stage 2
@@ -126,19 +145,22 @@ class Level(object):
         def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
             r"""Returns all carvable neighbors"""
 
-            # Section out a 3x3 area around the tile being checked
-            rows = self._map[crd[1] - 1: crd[1] + 2]
-            area = [row for row in rows[crd[0] - 1: crd[0] + 2]]
-
+            # Fixes some
+            area = self._map
             if origin is not None:
                 area[origin[1]][origin[0]] = 'X'
             if preorigin is not None:
                 area[preorigin[1]][preorigin[0]] = 'X'
+              
+            # Section out a 3x3 area around the tile being checked
+            # rows = self._map[crd[1] - 1: crd[1] + 2]
+            # area = [row for row in rows[crd[0] - 1: crd[0] + 2]]
+
 
             # Find the coordinates of neighbors
             neighbors = []
-            for y, y_row in enumerate(area):
-                for x, x_row in enumerate(y_row):
+            for y, y_row in enumerate(area[crd[1] - 1: crd[1] + 2]):
+                for x, x_row in enumerate(y_row[crd[0] - 1: crd[0] + 2]):
                     if area[y][x] != 'X':
                         neighbors.append((x, y))
 
@@ -181,8 +203,13 @@ class Level(object):
     def __test__(self, constant, _map: list[list[str]]):
         r"""Run to visualize the current level."""
 
+        # To incramentally show the generation as it happened
         next_disp_item = 0
 
+        # Varies based on what type of item is displayed
+        tick_speed = 60
+
+        # Display loop
         while True:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -190,21 +217,35 @@ class Level(object):
 
             screen.fill((255, 255, 255))
 
-            for _rect in self.__disp_list[:next_disp_item]:
-                rect = pg.rect.Rect(_rect[1] * 3, _rect[0] * 3, 3, 3)
-
+            # For each item that was added to __disp_list. Incriments to look fancy
+            for _disp_item in self.__disp_list[:next_disp_item]: 
+              
                 draw_color = (100, 100, 100)
-                match self._map[_rect[1]][_rect[0]]:
-                    case 'X':
-                        draw_color = (240, 240, 240)
-                    case 'r':
-                        draw_color = (240, 0, 0)
-                    case _:
-                        draw_color = (255, 0, 255)
 
-                pg.draw.rect(screen, draw_color, rect)
+                # If '_disp_item' is a PyGame Rect, treat it as such
+                if isinstance(_disp_item, pg.rect.Rect):
+                    # Check individual colors (won't differentiate between seperate hallways)
+                    match self._map[_disp_item.y][_disp_item.x]:
+                        case 'X':
+                            tick_speed = 99999999
+                            draw_color = (240, 240, 240)
+                        case _:
+                            tick_speed = 100
+                            draw_color = (255, 0, 255)
+              
+                elif isinstance(_disp_item, Room):
+                    tick_speed = 30
+                    draw_color = _ROOMS[_disp_item.area % len(_ROOMS)]
+                  
 
-            clock.tick(100)
+                disp_item = pg.rect.Rect(_disp_item.x * 3, 
+                   _disp_item.y * 3, 
+                   _disp_item.w * 3, 
+                   _disp_item.h * 3)
+              
+                pg.draw.rect(screen, draw_color, disp_item)
+
+            clock.tick(tick_speed)
 
             next_disp_item += 1
 

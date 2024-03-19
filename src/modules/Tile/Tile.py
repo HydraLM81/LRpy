@@ -2,7 +2,7 @@ import pygame as pg
 import os
 
 cwd = os.getcwd()
-path = cwd + "/src/sprites/environ/"
+path = cwd + "/src/Sprites/environ/"
 
 NULL = pg.image.load(path + "NULL.png")
 
