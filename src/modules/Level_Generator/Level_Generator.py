@@ -25,10 +25,10 @@ Flood-fill:
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int] = (20, 20)  # (x, y)
+level_size: tuple[int, int] = (100, 100)  # (x, y)
 
-# Normal rooms
-room_placement_attempts: int = 0  # Attempts to place rooms
+# Room generation parameters
+room_placement_attempts: int = 50  # Attempts to place rooms
 room_minimum_size: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
 room_maximum_size: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
 
@@ -147,8 +147,66 @@ class Level(object):
     # Stage 2
     def carve_hallways(self):
         r"""Carve the hallways"""
+        
+        def check_neighbors(crd):
+            r"""Check if a tile has any neighbors directly around it."""
+            # Check out of bounds
+            if crd[0] <= 0 or crd[0] >= level_size[0] - 2:
+                return False
+            if crd[1] <= 0 or crd[1] >= level_size[1] - 1:
+                return False
 
-        def cr(crd):
+            # Get a 3x3 area around crd
+            rows = self._map[crd[1] - 1: crd[1] + 2]
+            area = [row[crd[0] - 1: crd[0] + 2] for row in rows]
+
+            area[1][1] = 'X'
+            if area[0].count('X') == area[1].count('X') == area[2].count('X') == 3:
+                return True
+            return False
+
+        def _possible(crd):
+            return [((crd[0] + 2, crd[1]), (crd[0] + 1, crd[1])),
+                    ((crd[0] - 2, crd[1]), (crd[0] - 1, crd[1])),
+                    ((crd[0], crd[1] - 2), (crd[0], crd[1] - 1)),
+                    ((crd[0], crd[1] + 2), (crd[0], crd[1] + 1))]
+            
+        def recursive_check(crd):
+            self.carve(crd, 'ch', True)
+
+            possible = _possible(crd)
+            
+            rand.shuffle(possible)
+
+            #new_hallways = []
+          
+            if check_neighbors(possible[0][0]):
+                self.carve(possible[0][1], 'ch', True)
+                #new_hallways.append(possible[0][1])
+                recursive_check(possible[0][0])
+                self.carve(possible[0][1], 'h', True)
+            if check_neighbors(possible[1][0]):
+                self.carve(possible[1][1], 'ch', True)
+                #new_hallways.append(possible[1][1])
+                recursive_check(possible[1][0])
+                self.carve(possible[1][1], 'h', True)
+            if check_neighbors(possible[2][0]):
+                self.carve(possible[2][1], 'ch', True)
+                #new_hallways.append(possible[2][1])
+                recursive_check(possible[2][0])
+                self.carve(possible[2][1], 'h', True)
+            if check_neighbors(possible[3][0]):
+                self.carve(possible[3][1], 'ch', True)
+                #new_hallways.append(possible[3][1])
+                recursive_check(possible[3][0])
+                self.carve(possible[3][1], 'h', True)
+
+            #[self.carve(_crd, 'h', True) for _crd in new_hallways]
+            self.carve(crd, 'h', True)
+
+        recursive_check((1, 1))
+            
+        """def cr(crd):
             if crd[0] + 1 >= level_size[0] - 2:
                 return False
             one = self._map[crd[1] - 1][crd[0] + 1]
@@ -180,27 +238,43 @@ class Level(object):
             thr = self._map[crd[1] + 1][crd[0] + 1]
             return one == two == thr == 'X'
 
+       
         def recurse_generate(crd):
             print(crd)
             self.carve(crd, 'ph', disp_list=True)
 
             while True:
-                if cr((crd[0], crd[1])):
-                    recurse_generate((crd[0] + 1, crd[1]))
-                elif cl((crd[0], crd[1])):
-                    recurse_generate((crd[0] - 1, crd[1]))
-                elif cu((crd[0], crd[1])):
-                    recurse_generate((crd[0], crd[1] - 1))
-                elif cd((crd[0], crd[1])):
-                    recurse_generate((crd[0], crd[1] + 1))
-                else:
+                time.sleep(.01)
+                checknum = [0, 1, 2, 3]
+                rand.shuffle(checknum)
+                checks = {
+                    checknum[0]: cr,
+                    checknum[1]: cl
+                }
+                
+                if not any(checks):
                     break
+                choice = rand.randint(0, 3)
+                if checks[0]: #and choice == 0:
+                    if cr((crd[0] + 1, crd[1])):
+                        recurse_generate((crd[0] + 1, crd[1]))
+                elif checks[1]: #and choice == 1:
+                    if cl((crd[0] - 1, crd[1])):
+                        recurse_generate((crd[0] - 1, crd[1]))
+                elif checks[2]: #and choice == 2:
+                    if cd((crd[0], crd[1] - 1)):
+                        recurse_generate((crd[0], crd[1] - 1))
+                elif checks[3]: #and choice == 3:
+                    if cd((crd[0], crd[1] + 1)):
+                        recurse_generate((crd[0], crd[1] + 1))
+
+                
 
             self.carve(crd, 'h', disp_list=True)
 
             if crd == (1, 1):
                 print("End")
-        recurse_generate((1, 1))
+        recurse_generate((1, 1))"""
 
         """def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
             r"Returns all carvable neighbors"
@@ -277,18 +351,18 @@ class Level(object):
                 # If '_disp_item' is a PyGame Rect, treat it as such
                 if isinstance(_disp_item.obj, pg.rect.Rect):
                     # Check individual colors (won't differentiate between separate hallways)
-                    match self._map[_disp_item.obj.y][_disp_item.obj.x]:
+                    match _disp_item.char:
                         case 'X':
                             tick_speed = 99999999
-                            draw_color = (240, 240, 240)
-                        case "ph":
-                            tick_speed = 50
-                            draw_color = (100, 240, 240)
+                            draw_color = (0, 0, 0)
+                        case "ch":
+                            tick_speed = 250
+                            draw_color = (0, 200, 240)
                         case 'h':
-                            tick_speed = 50
-                            draw_color = (200, 0, 200)
+                            tick_speed = 250
+                            draw_color = (100, 0, 240)
                         case _:
-                            print(f"Uncaught: {self._map[_disp_item.obj.y][_disp_item.obj.x]}")
+                            print(f"Uncaught: \'{_disp_item.char}\'")
                             tick_speed = 100
                             draw_color = (255, 0, 255)
               
