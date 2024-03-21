@@ -1,6 +1,6 @@
 import pygame as pg
 import os
-import random as rand
+import random
 import time
 
 pg.init()
@@ -16,7 +16,7 @@ I tried to follow their ideas, but with my own twists and parameters for things.
 ##  Stages of generation  ##
 """
 1: Place rooms
-2: Randomized flood-fill
+2: randomomized flood-fill
 """
 
 """   TODO
@@ -28,9 +28,9 @@ Flood-fill:
 level_size: tuple[int, int] = (150, 150)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 0  # Attempts to place rooms
-room_minimum_size: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
-room_maximum_size: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
+room_placement_attempts: int = 50  # Attempts to place rooms
+room_min: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
+room_max: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
 
 ##  generation dictionary  ##
 # 'X' = wall
@@ -67,6 +67,7 @@ def new_area():
 
 class Room(object):
     def __init__(self, x, y, w, h):
+        r"""Creates a new Room. Used to simplify \'Level.__test\'"""
         self.area = new_area()
         self.x = x
         self.y = y
@@ -77,6 +78,7 @@ class Room(object):
 
 class DispItem(object):
     def __init__(self, obj: pg.rect.Rect | Room, char: str):
+        """Creates a new DispItem. Used to simplify \'Level.__test__\'"""
         self.obj: pg.rect.Rect | Room = obj
         self.char: str = char
 
@@ -89,30 +91,30 @@ class Level(object):
         # Carve rooms
         self.__existing_rooms: list[Room] = []
         self.__disp_list: list[DispItem] = []
-        # self.carve_rooms()
+        self.carve_rooms()
 
         self.carve_hallways()
 
         self.__test__(self._map)
 
-    def carve(self, coordinate: tuple[int, int], new: str = ' ', disp_list=True):
+    def carve(self, coordinate: tuple[int, int], new: str, disp_list: bool):
         self._map[coordinate[1]][coordinate[0]] = new
         if disp_list:
             self.__disp_list.append(DispItem(pg.rect.Rect(coordinate[1],
-                                             coordinate[0],
-                                             1, 1),
+                                                          coordinate[0],
+                                                          1, 1         ),
                                              new))
     
     # Stage 1
     def carve_rooms(self):
-        r"""Attempt to carve room randomly"""
+        r"""Attempt to carve room randomomly"""
       
         for attempt in range(room_placement_attempts):
-            # Generate possible room
-            room_w: int = rand.randint(room_minimum_size[0], room_maximum_size[0])
-            room_h: int = rand.randint(room_minimum_size[1], room_maximum_size[1])
-            room_x: int = rand.randint(1, level_size[0] - room_w - 1)  # Level width  - 1
-            room_y: int = rand.randint(1, level_size[1] - room_h - 1)  # Level height - 1
+            # Generate possible room (odd only, makes maze look better)
+            room_w: int = (random.randint(room_min[0] // 2, room_max[0] // 2) * 2) + 1
+            room_h: int = (random.randint(room_min[1] // 2, room_max[1] // 2) * 2) + 1
+            room_x: int = (random.randint(1, (level_size[0] - room_w - 1) // 2) * 2) - 1
+            room_y: int = (random.randint(1, (level_size[1] - room_h - 1) // 2) * 2) - 1 
 
             current_room = Room(room_x, room_y, room_w, room_h)
 
@@ -137,9 +139,9 @@ class Level(object):
             if check_room_collision():
 
                 # Carve room out of self._map
-                for y in range(current_room.y, current_room.h + current_room.y + 1):
-                    for x in range(current_room.x, current_room.w + current_room.x + 1):
-                        self.carve((x, y), 'r', disp_list=False)
+                for y in range(current_room.y, current_room.h + current_room.y):
+                    for x in range(current_room.x, current_room.w + current_room.x):
+                        self.carve((y, x), 'r', False)
 
                 self.__existing_rooms.append(current_room)
                 self.__disp_list.append(DispItem(current_room, 'r'))
@@ -155,39 +157,52 @@ class Level(object):
                 return False
             if crd[1] <= 0 or crd[1] >= level_size[1] - 1:
                 return False
-
+                        
             # Get a 3x3 area around crd
             rows = self._map[crd[1] - 1: crd[1] + 2]
             area = [row[crd[0] - 1: crd[0] + 2] for row in rows]
 
+            # If all the tiles around it are 'X' (carvable), return True
             area[1][1] = 'X'
             if area[0].count('X') == area[1].count('X') == area[2].count('X') == 3:
                 return True
+                        
             return False
 
+        # Return a list of adjacent coordinates. Allows for random.shuffle()
         def _crdlist(crd):
             return [((crd[0] + 2, crd[1]), (crd[0] + 1, crd[1])),
                     ((crd[0] - 2, crd[1]), (crd[0] - 1, crd[1])),
                     ((crd[0], crd[1] - 2), (crd[0], crd[1] - 1)),
                     ((crd[0], crd[1] + 2), (crd[0], crd[1] + 1))]
 
+        # A list of all cells that can be branched from
         alive_cells: list[tuple[tuple[int, int], tuple[int, int]]] = []  # (crd, came_from)
+        # The starting point for the maze (could be varied, I'm lazy)
         alive_cells.append(((1, 1), (1, 1)))
-        ctime = time.time()
+        
+        ctime = time.time()  # Time how long generation takes
+        
         print("Starting loop")
+        
         while len(alive_cells) > 0:
-            print(f"Len cells: {len(alive_cells)}")
+            # Print the length of the cell list
+            print(f"Len cells: {len(alive_cells)}")  
+
+            # Define some extra variables for ease of reading
             _current_cell = alive_cells[-1]
-            current_cell = _current_cell[0]
-            last_cell = _current_cell[1]
+            current_cell = _current_cell[0] # The current cell
+            last_cell = _current_cell[1]    # The "in-between" cell where 'current' came from
             
             if self._map[current_cell[1]][current_cell[0]] == 'X':
-                self.carve(current_cell, 'ch')
+                self.carve(current_cell, 'ch', True)
             
             crdlist = _crdlist(current_cell)
 
-            rand.shuffle(crdlist)
+            # The "random" part of random DFS
+            random.shuffle(crdlist)
 
+            # Check the neighboring coordinates. If carvable, then go there.
             if check_neighbors(crdlist[0][0]):
                 self.carve(crdlist[0][1], 'ch', True)
                 alive_cells.append(crdlist[0])
@@ -203,16 +218,20 @@ class Level(object):
             elif check_neighbors(crdlist[3][0]):
                 self.carve(crdlist[3][1], 'ch', True)
                 alive_cells.append(crdlist[3])
-            
+
+            # No carvable neighbors, current_cell is dead, remove from list.
             else:
                 self.carve(current_cell, 'h', True)
                 self.carve(last_cell, 'h', True)
                 alive_cells.pop(-1)
+
+        # Print some fun statistic, because why not...
         print("Loop done")
         print(f"Time taken in loop: {time.time() - ctime}")
         print(f"disp_list length after hallways: {len(self.__disp_list)}")
             
 
+    # Creates a blank map for 'self._map'
     @classmethod
     def blank_map(cls) -> list[list[str]]:
         _map: list = []
@@ -229,16 +248,13 @@ class Level(object):
         # To incramentally show the generation as it happened
         next_disp_item = 0
 
-        # Varies based on what type of item is displayed
-        tick_speed = 60
-
         # Display loop
         while True:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     exit()
 
-            screen.fill((255, 255, 255))
+            screen.fill((0, 0, 0))
 
             # For each item that was added to __disp_list. Increments to look fancy
             for _disp_item in self.__disp_list[:next_disp_item]: 
@@ -250,21 +266,17 @@ class Level(object):
                     # Check individual colors (won't differentiate between separate hallways)
                     match _disp_item.char:
                         case 'X':
-                            tick_speed = 99999999
                             draw_color = (0, 0, 0)
                         case "ch":
-                            tick_speed = 250
                             draw_color = (0, 200, 240)
                         case 'h':
-                            tick_speed = 250
                             draw_color = (100, 0, 240)
                         case _:
                             print(f"Uncaught: \'{_disp_item.char}\'")
-                            tick_speed = 100
                             draw_color = (255, 0, 255)
-              
+
+                # If 'disp_item' is a 'Room' object (different from Rect)
                 elif isinstance(_disp_item.obj, Room):
-                    tick_speed = 30
                     draw_color = _ROOMS[_disp_item.obj.area % len(_ROOMS)]
 
                 disp_item = pg.rect.Rect(_disp_item.obj.x * 3,
@@ -274,15 +286,13 @@ class Level(object):
               
                 pg.draw.rect(screen, draw_color, disp_item)
 
-            clock.tick(tick_speed)
 
-            next_disp_item += 1
+            next_disp_item += 30
 
             pg.display.update()
 
 
 def level_generator_function():
     return Level()
-
 
 level_generator_function()
