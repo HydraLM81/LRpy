@@ -25,10 +25,10 @@ Flood-fill:
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int] = (100, 100)  # (x, y)
+level_size: tuple[int, int] = (150, 150)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 50  # Attempts to place rooms
+room_placement_attempts: int = 0  # Attempts to place rooms
 room_minimum_size: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
 room_maximum_size: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
 
@@ -89,7 +89,7 @@ class Level(object):
         # Carve rooms
         self.__existing_rooms: list[Room] = []
         self.__disp_list: list[DispItem] = []
-        self.carve_rooms()
+        # self.carve_rooms()
 
         self.carve_hallways()
 
@@ -165,156 +165,53 @@ class Level(object):
                 return True
             return False
 
-        def _possible(crd):
+        def _crdlist(crd):
             return [((crd[0] + 2, crd[1]), (crd[0] + 1, crd[1])),
                     ((crd[0] - 2, crd[1]), (crd[0] - 1, crd[1])),
                     ((crd[0], crd[1] - 2), (crd[0], crd[1] - 1)),
                     ((crd[0], crd[1] + 2), (crd[0], crd[1] + 1))]
+
+        alive_cells: list[tuple[tuple[int, int], tuple[int, int]]] = []  # (crd, came_from)
+        alive_cells.append(((1, 1), (1, 1)))
+        ctime = time.time()
+        print("Starting loop")
+        while len(alive_cells) > 0:
+            print(f"Len cells: {len(alive_cells)}")
+            _current_cell = alive_cells[-1]
+            current_cell = _current_cell[0]
+            last_cell = _current_cell[1]
             
-        def recursive_check(crd):
-            self.carve(crd, 'ch', True)
-
-            possible = _possible(crd)
+            if self._map[current_cell[1]][current_cell[0]] == 'X':
+                self.carve(current_cell, 'ch')
             
-            rand.shuffle(possible)
+            crdlist = _crdlist(current_cell)
 
-            #new_hallways = []
-          
-            if check_neighbors(possible[0][0]):
-                self.carve(possible[0][1], 'ch', True)
-                #new_hallways.append(possible[0][1])
-                recursive_check(possible[0][0])
-                self.carve(possible[0][1], 'h', True)
-            if check_neighbors(possible[1][0]):
-                self.carve(possible[1][1], 'ch', True)
-                #new_hallways.append(possible[1][1])
-                recursive_check(possible[1][0])
-                self.carve(possible[1][1], 'h', True)
-            if check_neighbors(possible[2][0]):
-                self.carve(possible[2][1], 'ch', True)
-                #new_hallways.append(possible[2][1])
-                recursive_check(possible[2][0])
-                self.carve(possible[2][1], 'h', True)
-            if check_neighbors(possible[3][0]):
-                self.carve(possible[3][1], 'ch', True)
-                #new_hallways.append(possible[3][1])
-                recursive_check(possible[3][0])
-                self.carve(possible[3][1], 'h', True)
+            rand.shuffle(crdlist)
 
-            #[self.carve(_crd, 'h', True) for _crd in new_hallways]
-            self.carve(crd, 'h', True)
-
-        recursive_check((1, 1))
-            
-        """def cr(crd):
-            if crd[0] + 1 >= level_size[0] - 2:
-                return False
-            one = self._map[crd[1] - 1][crd[0] + 1]
-            two = self._map[crd[1]][crd[0] + 1]
-            thr = self._map[crd[1] + 1][crd[0] + 1]
-            return one == two == thr == 'X'
-
-        def cl(crd):
-            if crd[0] - 1 <= 0:
-                return False
-            one = self._map[crd[1] - 1][crd[0] - 1]
-            two = self._map[crd[1]][crd[0] - 1]
-            thr = self._map[crd[1] + 1][crd[0] - 1]
-            return one == two == thr == 'X'
-
-        def cu(crd):
-            if crd[1] - 1 <= 0:
-                return False
-            one = self._map[crd[1] - 1][crd[0] - 1]
-            two = self._map[crd[1] - 1][crd[0]]
-            thr = self._map[crd[1] - 1][crd[0] + 1]
-            return one == two == thr == 'X'
-
-        def cd(crd):
-            if crd[1] + 1 >= level_size[1] - 2:
-                return False
-            one = self._map[crd[1] + 1][crd[0] - 1]
-            two = self._map[crd[1] + 1][crd[0]]
-            thr = self._map[crd[1] + 1][crd[0] + 1]
-            return one == two == thr == 'X'
-
-       
-        def recurse_generate(crd):
-            print(crd)
-            self.carve(crd, 'ph', disp_list=True)
-
-            while True:
-                time.sleep(.01)
-                checknum = [0, 1, 2, 3]
-                rand.shuffle(checknum)
-                checks = {
-                    checknum[0]: cr,
-                    checknum[1]: cl
-                }
+            if check_neighbors(crdlist[0][0]):
+                self.carve(crdlist[0][1], 'ch', True)
+                alive_cells.append(crdlist[0])
                 
-                if not any(checks):
-                    break
-                choice = rand.randint(0, 3)
-                if checks[0]: #and choice == 0:
-                    if cr((crd[0] + 1, crd[1])):
-                        recurse_generate((crd[0] + 1, crd[1]))
-                elif checks[1]: #and choice == 1:
-                    if cl((crd[0] - 1, crd[1])):
-                        recurse_generate((crd[0] - 1, crd[1]))
-                elif checks[2]: #and choice == 2:
-                    if cd((crd[0], crd[1] - 1)):
-                        recurse_generate((crd[0], crd[1] - 1))
-                elif checks[3]: #and choice == 3:
-                    if cd((crd[0], crd[1] + 1)):
-                        recurse_generate((crd[0], crd[1] + 1))
-
-                
-
-            self.carve(crd, 'h', disp_list=True)
-
-            if crd == (1, 1):
-                print("End")
-        recurse_generate((1, 1))"""
-
-        """def check_neighbors(crd, origin=None, preorigin=None) -> list[tuple[int, int]] | None:
-            r"Returns all carvable neighbors"
-
-            # Fixes some
-            area = self._map
-            if origin is not None:
-                area[origin[1]][origin[0]] = 'X'
-            if preorigin is not None:
-                area[preorigin[1]][preorigin[0]] = 'X'
-              
-            # Section out a 3x3 area around the tile being checked
-            # rows = self._map[crd[1] - 1: crd[1] + 2]
-            # area = [row for row in rows[crd[0] - 1: crd[0] + 2]]
-
-
-            # Find the coordinates of neighbors
-            neighbors = []
-            for y, y_row in enumerate(area[crd[1] - 1: crd[1] + 2]):
-                for x, x_row in enumerate(y_row[crd[0] - 1: crd[0] + 2]):
-                    if area[y][x] != 'X':
-                        neighbors.append((x, y))
-
-            # No neighbors
-            if neighbors == []:
-                return None
-
-            # Return all neighbors
-            return neighbors
-
-        # A list of all tiles that have carvable neighbors
-        alive_tiles = []
-        for y, y_axis in enumerate(self._map):
-            for x, tile in enumerate(y_axis):
-                if tile == 'X':
-                    alive_tiles.append((x, y))
-
-        start_coordinate = (1, 1)  # x, y of starting coordinate for floodfill
-        while check_neighbors(start_coordinate) is None:
-            start_coordinate = (start_coordinate[0] + 1, 1)"""
+            elif check_neighbors(crdlist[1][0]):
+                self.carve(crdlist[1][1], 'ch', True)
+                alive_cells.append(crdlist[1])
+            
+            elif check_neighbors(crdlist[2][0]):
+                self.carve(crdlist[2][1], 'ch', True)
+                alive_cells.append(crdlist[2])
+            
+            elif check_neighbors(crdlist[3][0]):
+                self.carve(crdlist[3][1], 'ch', True)
+                alive_cells.append(crdlist[3])
+            
+            else:
+                self.carve(current_cell, 'h', True)
+                self.carve(last_cell, 'h', True)
+                alive_cells.pop(-1)
+        print("Loop done")
+        print(f"Time taken in loop: {time.time() - ctime}")
+        print(f"disp_list length after hallways: {len(self.__disp_list)}")
+            
 
     @classmethod
     def blank_map(cls) -> list[list[str]]:
