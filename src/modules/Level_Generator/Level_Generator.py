@@ -25,13 +25,13 @@ Flood-fill:
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int]  = (150, 150)  # (x, y)
+level_size: tuple[int, int] = (150, 150)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 50        # Attempts to place rooms
-room_min: tuple[int, int]    = (8, 8)    # Minimum room size (x, y)
-room_max: tuple[int, int]    = (20, 20)  # Maximum room size (x, y)
-room_doors: tuple[int, int]  = (1, 4)    # The min and max number of doors per room
+room_placement_attempts: int = 50  # Attempts to place rooms
+room_min: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
+room_max: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
+room_doors: tuple[int, int] = (1, 4)  # The min and max number of doors per room
 
 ##  generation dictionary  ##
 # 'X'  = wall
@@ -80,23 +80,24 @@ class Room(object):
         self.w = w
         self.h = h
         self.rect = pg.rect.Rect(x, y, w, h)
-        self.connections = 0
+        self.connections = random.randint(room_doors[0], room_doors[1])
 
-    def create_door(self):
+    def create_door(self, _map):
         edges: list[tuple[int, int]] = []
 
+        # Find the edges of rooms (not sure why, but it has to be (y, x))
         for x in range(self.x, self.x + self.w):
-            edges.append((x + self.x, self.y))
-            edges.append((x + self.x, self.y + self.h))
+            edges.append((self.y - 1, x))
+            edges.append((self.y + self.h, x))
         for y in range(self.y, self.y + self.h):
-            edges.append((self.x, y + self.y))
-            edges.append((self.x + self.w, y + self.y))
+            edges.append((y, self.x - 1))
+            edges.append((y, self.x + self.w))
 
         random.shuffle(edges)
 
-        _map = self._map
-
         def check_doors(crd):
+
+            print(crd)
             right = (crd[0] + 1, crd[1])
             left = (crd[0] - 1, crd[1])
             up = (crd[0], crd[1] - 1)
@@ -110,7 +111,12 @@ class Room(object):
                 return True
             return False
 
-        door_num = random.randint(room_doors[0], room_doors[1])
+        carve_doors: list[tuple[int, int]] = []
+        while len(carve_doors) < self.connections:
+            if check_doors(edges[0]):
+                carve_doors.append(edges[0])
+            edges.pop(0)
+        return carve_doors
 
 
 class DispItem(object):
@@ -131,6 +137,8 @@ class Level(object):
         self.carve_rooms()
 
         self.carve_hallways()
+
+        self.carve_connections()
 
         self.__test__(self._map)
 
@@ -269,35 +277,22 @@ class Level(object):
 
     def carve_connections(self):
         r"""Carve the connections between passages"""
-        c_list: list[tuple[int, int]] = []
 
-        def check_connection(crd: tuple[int, int]):
-            r"""Check if \'crd\' should be marked \'c\'"""
+        _connections: list[list[tuple[int, int]]] = []
+        for room in self.__existing_rooms:
+            _connections.append(room.create_door(self._map))
 
-            """_map = self._map
-            right  = (crd[0] + 1, crd[1])
-            left   = (crd[0] - 1, crd[1])
-            up     = (crd[0], crd[1] - 1)
-            down   = (crd[0], crd[1] + 1)
+        connections: list[tuple[int, int]] = []
+        for connection in _connections:
+            [connections.append(val) for val in connection]
 
-            # Horizontal:
-            if _map[right[1]][right[0]] != _map[left[1]][left[0]] 
-                and _map[right[1]][right[0]] != 'X':
-                    c_list.append(crd)
-            """
-            rows = self._map[1:-1]
-            _map = [row[1:-1] for row in rows]
-            for y, y_axis in enumerate(_map):
-                for x, tile in enumerate(y_axis):
-                    if tile == 'X':
-                        # Horizontal
-                        lr = (_map[y][x - 1], _map[y][x + 1])
-                        if lr[0] != lr[1] and lr[0] != 'X' and lr[1] != 'X':
-                            c_list.append((x, y))
-                        ud = (_map[y - 1][x], _map[y + 1][x])
-                        if ud[0] != ud[1] and ud[0] != 'X' and ud[1] != 'X':
-                            c_list.append((x, y))
-
+        for connection in connections:
+            self.carve(connection, 'c', True)
+        random.shuffle(connections)
+        for connection in connections[:len(connections) // 2]:
+            self.carve(connection, 'd', True)
+        for connection in connections[len(connections) // 2:]:
+            self.carve(connection, 'h', True)
     # Creates a blank map for 'self._map'
     @classmethod
     def blank_map(cls) -> list[list[str]]:
