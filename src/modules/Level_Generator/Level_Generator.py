@@ -4,7 +4,7 @@ import random
 import time
 
 pg.init()
-screen = pg.display.set_mode((450, 450))
+screen = pg.display.set_mode((600, 600))
 pg.display.set_caption("")
 clock = pg.time.Clock()
 
@@ -25,13 +25,13 @@ Flood-fill:
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int] = (150, 150)  # (x, y)
+level_size: tuple[int, int] = (200, 200)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 50  # Attempts to place rooms
-room_min: tuple[int, int] = (8, 8)  # Minimum room size (x, y)
-room_max: tuple[int, int] = (20, 20)  # Maximum room size (x, y)
-room_doors: tuple[int, int] = (1, 4)  # The min and max number of doors per room
+room_placement_attempts: int = 1050  # Attempts to place rooms
+room_min: tuple[int, int] = (5, 5)  # Minimum room size (x, y)
+room_max: tuple[int, int] = (10, 10)  # Maximum room size (x, y)
+room_doors: tuple[int, int] = (1, 1)  # The min and max number of doors per room
 
 ##  generation dictionary  ##
 # 'X'  = wall
@@ -71,50 +71,74 @@ def new_area():
     return __areas
 
 
+class MapTile(object):
+    def __init__(self, char='X', area=-1):
+        self.char = char
+        self.area = area
+
+
 class Room(object):
     def __init__(self, x, y, w, h):
-        r"""Creates a new Room. Used to simplify \'Level.__test\'"""
+        r"""Creates a new Room. Mainly used to simplify \'Level.__test\'"""
         self.area = new_area()
         self.x = x
         self.y = y
         self.w = w
         self.h = h
         self.rect = pg.rect.Rect(x, y, w, h)
-        self.connections = random.randint(room_doors[0], room_doors[1])
+        self.max_connections = random.randint(room_doors[0], room_doors[1])
 
     def create_door(self, _map):
+        r"""Create doors between rooms/hallways (_map:Level._map)"""
         edges: list[tuple[int, int]] = []
 
-        # Find the edges of rooms (not sure why, but it has to be (y, x))
+        connections = 0
+
+        # Find the edges of rooms (NOT (y, x)!)
         for x in range(self.x, self.x + self.w):
-            edges.append((self.y - 1, x))
-            edges.append((self.y + self.h, x))
+            # Top
+            if _map[self.y - 1][x].char != 'X':
+                connections += 1
+            else: edges.append((x, self.y - 1))
+            # Bottom
+            if _map[self.y + self.h][x].char != 'X':
+                connections += 1
+            else: edges.append((x, self.y + self.h))
+
         for y in range(self.y, self.y + self.h):
-            edges.append((y, self.x - 1))
-            edges.append((y, self.x + self.w))
+            # Left
+            if _map[y][self.x - 1].char != 'X':
+                connections += 1
+            else: edges.append((self.x - 1, y))
+            # Right
+            if _map[y][self.x + self.w].char != 'X':
+                connections += 1
+            else: edges.append((self.x + self.w, y))
 
         random.shuffle(edges)
 
         def check_doors(crd):
 
             print(crd)
-            right = (crd[0] + 1, crd[1])
-            left = (crd[0] - 1, crd[1])
-            up = (crd[0], crd[1] - 1)
-            down = (crd[0], crd[1] + 1)
+            right = _map[crd[1]][crd[0] + 1].char
+            left = _map[crd[1]][crd[0] - 1].char
+            up = _map[crd[1] - 1][crd[0]].char
+            down = _map[crd[1] + 1][crd[0]].char
 
-            # Horizontal:
-            if _map[left[1]][left[0]] != 'X' and _map[right[1]][right[0]] != 'X':
-                return True
-            # Vertical
-            if _map[up[1]][up[0]] != 'X' and _map[down[1]][down[0]] != 'X':
-                return True
-            return False
+            ret = False
+
+            if [right, left, up, down].count('X') == 2:
+                ret = True
+            #if (right == left == 'r') or (up == down == 'r'):
+            #    ret = False
+
+            return ret
 
         carve_doors: list[tuple[int, int]] = []
-        while len(carve_doors) < self.connections:
+        while connections < self.max_connections and len(edges) > 0:
             if check_doors(edges[0]):
                 carve_doors.append(edges[0])
+                connections += 1
             edges.pop(0)
         return carve_doors
 
@@ -129,7 +153,7 @@ class DispItem(object):
 class Level(object):
     def __init__(self):
         r"""Create new level object with set 'GENERATION PARAMETERS' (Level_Generator.py)"""
-        self._map = Level.blank_map()
+        self._map: list[list[MapTile]] = Level.blank_map()
 
         # Carve rooms
         self.__existing_rooms: list[Room] = []
@@ -140,19 +164,24 @@ class Level(object):
 
         self.carve_connections()
 
-        self.__test__(self._map)
+        self.__test__()
 
-    def carve(self, coordinate: tuple[int, int], new: str, disp_list: bool):
-        self._map[coordinate[1]][coordinate[0]] = new
+    def carve(self, coordinate: tuple[int, int], new: str, disp_list: bool, area=None):
+        r"""COORDINATE IS (x, y) except for rooms? idfk anymore"""
+        self._map[coordinate[1]][coordinate[0]].char = new
+
+        if area is not None:
+            self._map[coordinate[1]][coordinate[0]].area = area
+
         if disp_list:
-            self.__disp_list.append(DispItem(pg.rect.Rect(coordinate[1],
-                                                          coordinate[0],
+            self.__disp_list.append(DispItem(pg.rect.Rect(coordinate[0],  # ISTG FOR >7 HOURS I SWAPPED THESE
+                                                          coordinate[1],  # WHY DO I DO THIS TO MYSELF
                                                           1, 1),
                                              new))
 
     # Stage 1
     def carve_rooms(self):
-        r"""Attempt to carve room randomomly"""
+        r"""Attempt to carve room randomly"""
 
         for attempt in range(room_placement_attempts):
             # Generate possible room (odd only, makes maze look better)
@@ -183,13 +212,13 @@ class Level(object):
             # If room is NOT colliding
             if check_room_collision():
 
+                self.__existing_rooms.append(current_room)
+                self.__disp_list.append(DispItem(current_room, 'r'))
+
                 # Carve room out of self._map
                 for y in range(current_room.y, current_room.h + current_room.y):
                     for x in range(current_room.x, current_room.w + current_room.x):
-                        self.carve((y, x), 'r', False)
-
-                self.__existing_rooms.append(current_room)
-                self.__disp_list.append(DispItem(current_room, 'r'))
+                        self.carve((x, y), 'r', False, area=1)
 
     # Stage 2
     def carve_hallways(self):
@@ -205,9 +234,10 @@ class Level(object):
 
             # Get a 3x3 area around crd
             rows = self._map[crd[1] - 1: crd[1] + 2]
-            area = [row[crd[0] - 1: crd[0] + 2] for row in rows]
+            _area = [row[crd[0] - 1: crd[0] + 2] for row in rows]
+            area = [[tile.char for tile in row] for row in _area]
 
-            # If all the tiles around it are 'X' (carvable), return True
+            # If all the surrounding tiles are 'X' (carvable), return True
             area[1][1] = 'X'
             if area[0].count('X') == area[1].count('X') == area[2].count('X') == 3:
                 return True
@@ -239,7 +269,7 @@ class Level(object):
             current_cell = _current_cell[0]  # The current cell
             last_cell = _current_cell[1]  # The "in-between" cell where 'current' came from
 
-            if self._map[current_cell[1]][current_cell[0]] == 'X':
+            if self._map[current_cell[1]][current_cell[0]].char == 'X':
                 self.carve(current_cell, 'ch', True)
 
             crdlist = _crdlist(current_cell)
@@ -278,6 +308,7 @@ class Level(object):
     def carve_connections(self):
         r"""Carve the connections between passages"""
 
+        # First run from the rooms
         _connections: list[list[tuple[int, int]]] = []
         for room in self.__existing_rooms:
             _connections.append(room.create_door(self._map))
@@ -293,18 +324,21 @@ class Level(object):
             self.carve(connection, 'd', True)
         for connection in connections[len(connections) // 2:]:
             self.carve(connection, 'h', True)
+        print('done done')
+
+
     # Creates a blank map for 'self._map'
     @classmethod
-    def blank_map(cls) -> list[list[str]]:
+    def blank_map(cls) -> list[list[MapTile]]:
         _map: list = []
         for y in range(level_size[1]):
-            x_axis: list[str] = []
+            x_axis: list[MapTile] = []
             for x in range(level_size[0]):
-                x_axis.append('X')
+                x_axis.append(MapTile('X'))
             _map.append(x_axis)
         return _map
 
-    def __test__(self, _map: list[list[str]]):
+    def __test__(self):
         r"""Run to visualize the current level."""
 
         # To incramentally show the generation as it happened
@@ -334,7 +368,7 @@ class Level(object):
                         case 'h':
                             draw_color = (100, 0, 240)
                         case _:
-                            print(f"Uncaught: \'{_disp_item.char}\'")
+                            #print(f"Uncaught: \'{_disp_item.char}\'")
                             draw_color = (255, 0, 255)
 
                 # If 'disp_item' is a 'Room' object (different from Rect)
@@ -348,7 +382,9 @@ class Level(object):
 
                 pg.draw.rect(screen, draw_color, disp_item)
 
-            next_disp_item += 100
+            clock.tick(30)
+
+            next_disp_item += 10000
 
             pg.display.update()
 
