@@ -16,12 +16,7 @@ I tried to follow their ideas, but with my own twists and parameters for things.
 ##  Stages of generation  ##
 """
 1: Place rooms
-2: randomomized flood-fill
-"""
-
-"""   TODO
-Flood-fill:
-    Choose starting point
+2: randomized flood-fill
 """
 
 ### GENERATION PARAMETERS ###
@@ -86,34 +81,33 @@ class Room(object):
         self.w = w
         self.h = h
         self.rect = pg.rect.Rect(x, y, w, h)
+        self.connections = 0
         self.max_connections = random.randint(room_doors[0], room_doors[1])
 
-    def create_door(self, _map):
+    def create_door(self, _map, _room_list):
         r"""Create doors between rooms/hallways (_map:Level._map)"""
         edges: list[tuple[int, int]] = []
-
-        connections = 0
 
         # Find the edges of rooms (NOT (y, x)!)
         for x in range(self.x, self.x + self.w):
             # Top
-            if _map[self.y - 1][x].char != 'X':
-                connections += 1
-            else: edges.append((x, self.y - 1))
+            if _map[self.y - 1][x].char == 'X':
+                edges.append((x, self.y - 1))
+            else: self.connections += 1
             # Bottom
-            if _map[self.y + self.h][x].char != 'X':
-                connections += 1
-            else: edges.append((x, self.y + self.h))
+            if _map[self.y + self.h][x].char == 'X':
+                edges.append((x, self.y + self.h))
+            else: self.connections += 1
 
         for y in range(self.y, self.y + self.h):
             # Left
-            if _map[y][self.x - 1].char != 'X':
-                connections += 1
-            else: edges.append((self.x - 1, y))
+            if _map[y][self.x - 1].char == 'X':
+                edges.append((self.x - 1, y))
+            else: self.connections += 1
             # Right
-            if _map[y][self.x + self.w].char != 'X':
-                connections += 1
-            else: edges.append((self.x + self.w, y))
+            if _map[y][self.x + self.w].char == 'X':
+                edges.append((self.x + self.w, y))
+            else: self.connections += 1
 
         random.shuffle(edges)
 
@@ -125,22 +119,58 @@ class Room(object):
             up = _map[crd[1] - 1][crd[0]].char
             down = _map[crd[1] + 1][crd[0]].char
 
+            r = (crd[0] + 1, crd[1])
+            l = (crd[0] - 1, crd[1])
+            u = (crd[0], crd[1] - 1)
+            d = (crd[0], crd[1] + 1)
+
             ret = False
 
             if [right, left, up, down].count('X') == 2:
                 ret = True
-            #if (right == left == 'r') or (up == down == 'r'):
-            #    ret = False
+
+            def room_grabber_ting(crd_: tuple[int, int]):
+                for room in _room_list:
+                    if room.check_coordinate(crd_):
+                        return room
+
+            if right == 'r' and self.x + self.w - 1 < r[0]:
+                grabbed_room = room_grabber_ting(r)
+                if grabbed_room.connections >= grabbed_room.max_connections:
+                    ret = False
+
+            if left == 'r' and self.x > l[0]:
+                grabbed_room = room_grabber_ting(l)
+                if grabbed_room.connections >= grabbed_room.max_connections:
+                    ret = False
+
+            if up == 'r' and self.y > u[1]:
+                grabbed_room = room_grabber_ting(u)
+                if grabbed_room.connections >= grabbed_room.max_connections:
+                    ret = False
+
+            if down == 'r' and self.y + self.h - 1 < d[1]:
+                grabbed_room = room_grabber_ting(d)
+                if grabbed_room.connections >= grabbed_room.max_connections:
+                    ret = False
 
             return ret
 
+        # Prevent top-left from being preferred for connections
+        random.shuffle(edges)
+
+        # Send the coordinates to be carved as connections
         carve_doors: list[tuple[int, int]] = []
-        while connections < self.max_connections and len(edges) > 0:
+        while self.connections < self.max_connections and len(edges) > 0:
             if check_doors(edges[0]):
                 carve_doors.append(edges[0])
-                connections += 1
+                self.connections += 1
             edges.pop(0)
         return carve_doors
+
+    def check_coordinate(self, crd):
+        r"""Check if /'crd/' is inside the room"""
+        return (self.x < crd[0] < self.x + self.w) and (self.y < crd[1] < self.y + self.h)
 
 
 class DispItem(object):
@@ -311,9 +341,12 @@ class Level(object):
         # First run from the rooms
         _connections: list[list[tuple[int, int]]] = []
         for room in self.__existing_rooms:
-            _connections.append(room.create_door(self._map))
+            for connections in room.create_door(self._map, self.__existing_rooms):
+                self.carve(connections,
+                           'd' if random.randint(0, 1) == 0 else 'h',
+                           True)
 
-        connections: list[tuple[int, int]] = []
+        """connections: list[tuple[int, int]] = []
         for connection in _connections:
             [connections.append(val) for val in connection]
 
@@ -323,7 +356,7 @@ class Level(object):
         for connection in connections[:len(connections) // 2]:
             self.carve(connection, 'd', True)
         for connection in connections[len(connections) // 2:]:
-            self.carve(connection, 'h', True)
+            self.carve(connection, 'h', True)"""
         print('done done')
 
 
