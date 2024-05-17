@@ -23,10 +23,10 @@ I tried to follow their ideas, but with my own twists and parameters for things.
 level_size: tuple[int, int] = (200, 200)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 1050  # Attempts to place rooms
+room_placement_attempts: int = 20000  # Attempts to place rooms
 room_min: tuple[int, int] = (5, 5)  # Minimum room size (x, y)
-room_max: tuple[int, int] = (10, 10)  # Maximum room size (x, y)
-room_doors: tuple[int, int] = (1, 1)  # The min and max number of doors per room
+room_max: tuple[int, int] = (15, 15)  # Maximum room size (x, y)
+room_doors: tuple[int, int] = (1, 4)  # The min and max number of doors per room
 
 ##  generation dictionary  ##
 # 'X'  = wall
@@ -134,7 +134,9 @@ class Room(object):
                     if room.check_coordinate(crd_):
                         return room
 
-            if right == 'r' and self.x + self.w - 1 < r[0]:
+            grabbed_room: Room | None = None
+
+            if right == 'r' and self.x + self.w < r[0]:
                 grabbed_room = room_grabber_ting(r)
                 if grabbed_room.connections >= grabbed_room.max_connections:
                     ret = False
@@ -149,20 +151,20 @@ class Room(object):
                 if grabbed_room.connections >= grabbed_room.max_connections:
                     ret = False
 
-            if down == 'r' and self.y + self.h - 1 < d[1]:
+            if down == 'r' and self.y + self.h < d[1]:
                 grabbed_room = room_grabber_ting(d)
                 if grabbed_room.connections >= grabbed_room.max_connections:
                     ret = False
 
-            return ret
-
-        # Prevent top-left from being preferred for connections
-        random.shuffle(edges)
+            return ret, grabbed_room
 
         # Send the coordinates to be carved as connections
         carve_doors: list[tuple[int, int]] = []
         while self.connections < self.max_connections and len(edges) > 0:
-            if check_doors(edges[0]):
+            checked = check_doors(edges[0])
+            if checked[0]:
+                if isinstance(checked[1], Room):
+                    checked[1].connections += 1
                 carve_doors.append(edges[0])
                 self.connections += 1
             edges.pop(0)
@@ -170,7 +172,7 @@ class Room(object):
 
     def check_coordinate(self, crd):
         r"""Check if /'crd/' is inside the room"""
-        return (self.x < crd[0] < self.x + self.w) and (self.y < crd[1] < self.y + self.h)
+        return (self.x <= crd[0] < self.x + self.w) and (self.y <= crd[1] < self.y + self.h)
 
 
 class DispItem(object):
@@ -283,8 +285,15 @@ class Level(object):
 
         # A list of all cells that can be branched from
         alive_cells: list[tuple[tuple[int, int], tuple[int, int]]] = []  # (crd, came_from)
-        # The starting point for the maze (could be varied, I'm lazy)
-        alive_cells.append(((1, 1), (1, 1)))
+
+        # Create a starting point for the maze (must be carveable)
+        def _sp_gen():
+            for y in range(0, len(self._map), 2):
+                for x in range(0, len(self._map[0]), 2):
+                    if self._map[y][x].char == 'X':
+                        return (x, y)
+        temp_crd = _sp_gen()
+        alive_cells.append(((1, 1)))
 
         ctime = time.time()  # Time how long generation takes
 
@@ -292,7 +301,7 @@ class Level(object):
 
         while len(alive_cells) > 0:
             # Print the length of the cell list
-            print(f"Len cells: {len(alive_cells)}")
+            #print(f"Len cells: {len(alive_cells)}")
 
             # Define some extra variables for ease of reading
             _current_cell = alive_cells[-1]
