@@ -20,15 +20,21 @@ I tried to follow their ideas, but with my own twists and parameters for things.
 """
 
 ### GENERATION PARAMETERS ###
-level_size: tuple[int, int] = (200, 200)  # (x, y)
+level_size: tuple[int, int] = (100, 100)  # (x, y)
 
 # Room generation parameters
-room_placement_attempts: int = 20000  # Attempts to place rooms
-room_min: tuple[int, int] = (5, 5)  # Minimum room size (x, y)
+room_placement_attempts: int = 150    # Attempts to place rooms
+room_min: tuple[int, int] = (5, 5)    # Minimum room size (x, y)
 room_max: tuple[int, int] = (15, 15)  # Maximum room size (x, y)
-room_doors: tuple[int, int] = (1, 4)  # The min and max number of doors per room
+room_doors: tuple[int, int] = (1, 3)  # The min and max number of doors per room
+
+# Other parameters
+hallway_sparsity: float = .30         # Percent of hallways to leave after introducing sparsity
+hallway_smoothness: float = .30       # Percent of hallways to be "smoothed" after sparsity
+
 
 ##  generation dictionary  ##
+# 'SP' = starting point     (spawn point for the player
 # 'X'  = wall
 # 'f'  = floor              (may be replaced with special tile)
 # 'r'  = room
@@ -196,6 +202,9 @@ class Level(object):
 
         self.carve_connections()
 
+        self.sparsify()
+        #self.smoothify()
+
         self.__test__()
 
     def carve(self, coordinate: tuple[int, int], new: str, disp_list: bool, area=None):
@@ -287,13 +296,15 @@ class Level(object):
         alive_cells: list[tuple[tuple[int, int], tuple[int, int]]] = []  # (crd, came_from)
 
         # Create a starting point for the maze (must be carveable)
-        def _sp_gen():
-            for y in range(0, len(self._map), 2):
-                for x in range(0, len(self._map[0]), 2):
-                    if self._map[y][x].char == 'X':
-                        return (x, y)
-        temp_crd = _sp_gen()
-        alive_cells.append(((1, 1)))
+        __done = False
+        for y in range(1, len(self._map), 2):
+            if __done: break
+            for x in range(1, len(self._map[0]), 2):
+                if self._map[y][x].char == 'X':
+                    alive_cells.append(((x, y), (x, y)))
+                    self._map[y][x].char = 'S'
+                    __done = True
+                    break
 
         ctime = time.time()  # Time how long generation takes
 
@@ -344,6 +355,7 @@ class Level(object):
         print(f"Time taken in loop: {time.time() - ctime}")
         print(f"disp_list length after hallways: {len(self.__disp_list)}")
 
+    # Stage 3
     def carve_connections(self):
         r"""Carve the connections between passages"""
 
@@ -355,19 +367,58 @@ class Level(object):
                            'd' if random.randint(0, 1) == 0 else 'h',
                            True)
 
-        """connections: list[tuple[int, int]] = []
-        for connection in _connections:
-            [connections.append(val) for val in connection]
-
-        for connection in connections:
-            self.carve(connection, 'c', True)
-        random.shuffle(connections)
-        for connection in connections[:len(connections) // 2]:
-            self.carve(connection, 'd', True)
-        for connection in connections[len(connections) // 2:]:
-            self.carve(connection, 'h', True)"""
         print('done done')
 
+    # Stage 4
+    def sparsify(self):
+        r""""""
+        def count_hallways():
+            r"""Count the number of hallway tiles"""
+            _count = 0
+            for _row in self._map:
+                for _tile in _row:
+                    if _tile.char == 'h':
+                        _count += 1
+            return _count
+
+        # The current number of hallways
+        cut_count = 0
+
+        # Number of hallways left after cutting
+        cutting_count = count_hallways() * hallway_sparsity
+
+        # List for cutting (similar to 'alive_cells' in hallway generation)
+        cutting_list: list[tuple[int, int]] = []
+
+        def surrounding_tiles(crd: tuple[int, int]):
+            right = self._map[crd[1]][crd[0] + 1].char
+            left = self._map[crd[1]][crd[0] - 1].char
+            up = self._map[crd[1] - 1][crd[0]].char
+            down = self._map[crd[1] + 1][crd[0]].char
+            return [right, left, up, down]
+
+        def recheck_list():
+            for y, row in enumerate(self._map):
+                for x, tile in enumerate(row):
+                    if tile.char == 'h' and surrounding_tiles((x, y)).count('X') == 3:
+                        cutting_list.append((x, y))
+
+        recheck_list()
+
+        random.shuffle(cutting_list)
+        print(len(cutting_list))
+        while cut_count < cutting_count and len(cutting_list) > 0:
+            current_crd = cutting_list[0]
+            cutting_list.pop(0)
+
+            self.carve(current_crd, 'X', True)
+
+            cut_count += 1
+
+            if len(cutting_list) == 0:
+                recheck_list()
+
+        print(f"len{len(cutting_list)} {cutting_count} {cut_count}")
 
     # Creates a blank map for 'self._map'
     @classmethod
@@ -417,10 +468,10 @@ class Level(object):
                 elif isinstance(_disp_item.obj, Room):
                     draw_color = _ROOMS[_disp_item.obj.area % len(_ROOMS)]
 
-                disp_item = pg.rect.Rect(_disp_item.obj.x * 3,
-                                         _disp_item.obj.y * 3,
-                                         _disp_item.obj.w * 3,
-                                         _disp_item.obj.h * 3)
+                disp_item = pg.rect.Rect(_disp_item.obj.x * 6,
+                                         _disp_item.obj.y * 6,
+                                         _disp_item.obj.w * 6,
+                                         _disp_item.obj.h * 6)
 
                 pg.draw.rect(screen, draw_color, disp_item)
 
